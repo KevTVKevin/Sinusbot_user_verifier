@@ -79,6 +79,12 @@ registerPlugin({
                 }
             }
         });
+        if (dbc) dbc.query("SELECT COUNT(*) FROM '' + config.databasePrefix + 'check'", function (err, res) {
+            if(!err) {
+                for(var i = 0; i < res; i++) {
 
+                }
+            }
+        });
     }
 });
