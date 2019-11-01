@@ -4,6 +4,7 @@ registerPlugin({
     description: 'Ein Verifaction System für Teamspeak Users über Minecraft',
     author: 'KevTVKevin <KevTV@GigaClub.net>',
     requiredModules: ["db"],
+    engines: '>= 1.0.0',
     vars: [{
         name: "databaseDriver",
         title: "Database Driver",
@@ -47,6 +48,7 @@ registerPlugin({
     var db = require('db');
     var engine = require('engine');
     var helpers = require('helpers');
+    var backend = require('backend');
 
     var dbc = db.connect({  driver: config.databaseDriver,
                             host: config.databaseHost,
@@ -60,43 +62,44 @@ registerPlugin({
             }
     });
     // Baue Tabellen auf, falls sie nicht existieren
-    if (dbc) dbc.exec("CREATE TABLE IF NOT EXISTS '' + config.databasePrefix + 'verify' ( 'id' int(11) NOT NULL AUTO_INCREMENT, 'minecraft_uuid' varchar(100) NOT NULL, 'ts_uuid' varchar(100) NOT NULL, 'verification_code' varchar(100) NOT NULL, 'verified' int(11) NOT NULL");
-    if (dbc) dbc.exec("CREATE TABLE IF NOT EXISTS '' + config.databasePrefix + 'check' ( 'id' int(11) NOT NULL AUTO_INCREMENT, 'checked' int(11) NOT NULL");
+    if (dbc) dbc.exec("CREATE TABLE IF NOT EXISTS " + config.databasePrefix + "verify ( id int(11) NOT NULL AUTO_INCREMENT, minecraft_uuid varchar(255) NOT NULL, ts_uuid varchar(255) NOT NULL, verification_code varchar(255) NOT NULL, verified int(11) NOT NULL, primary key (id))");
 
-    while (true) {
-        //Hole Anzahl der Datenbankeinträge in verify
-        if (dbc) dbc.query("SELECT COUNT(*) FROM '' + config.databasePrefix + 'verify'", function (err, res) {
-            if(!err) {
-                //Speichere Anzahl der Datenbankeinträge in check in der Variable count
-                var count = (dbc) ? dbc.query("SELECT COUNT(*) FROM '' + config.databasePrefix + 'check'", function (err, res){
-                    if (!err) {
-                        return res;
-                    }
-                    return -1;
-                }) : -1;
-                //Prüfe ob es mehr Einträge in verify als in check gibt
-                if(res > count) {
-                    for(let i = count+1; i < res; i++) {
-                        //Setze die neuen Einträge in der Datenbank auf 0
-                        if (dbc) dbc.exec("INSERT INTO '' + config.databasePrefix + 'check' (checked) VALUES (0)");
-                    }
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function getSpecificValue(selectedColumn, column, columnValue) {
+        if(dbc) {
+            dbc.exec("SELECT " + selectedColumn + " FROM " + config.databasePrefix + "verify WHERE " + column + " = '" + columnValue + "'", function (err, res) {
+                if(!err) {
+                    return res;
+                } else {
+                    return [];
                 }
-            }
-        });
-        //Hole alle checked Werte aus der check Tabelle
-        var checkArray = (dbc) ? dbc.query("SELECT checked FROM '' + config.databasePrefix + 'check'", function (err, res) {
-            if(!err) {
-                return res;
-            }
+            });
+        } else {
             return [];
-        }) : [];
-        for(let i = 0; i < checkArray.length; i++) {
-            if(checkArray[i] === 0) {
-                var worker = new Worker("checkUser.js");
-                worker.addEventListener("message", function (event) {
-
-                });
-            }
         }
-     }
+    }
+
+    function processValues(item, index) {
+
+        var user = getClientByUniqueID(item);
+
+        user.chat("Hi!");
+
+    }
+
+    async function doStuff() {
+        while (true) {
+            var toCheck = getSpecificValue("ts_uuid", "verified" , "0");
+
+            toCheck.forEach(processValues);
+
+            await sleep(3000);
+        }
+    }
+
+    doStuff();
+
 });
