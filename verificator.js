@@ -45,10 +45,11 @@ registerPlugin({
         type: "strings"
     }]
 }, function(_, config, meta) {
-    var db = require('db');
+    var event = require('event');
     var engine = require('engine');
-    var helpers = require('helpers');
     var backend = require('backend');
+    var helpers = require('helpers');
+    var db = require('db');
 
     var dbc = db.connect({  driver: config.databaseDriver,
                             host: config.databaseHost,
@@ -69,34 +70,55 @@ registerPlugin({
     }
 
     function getSpecificValue(selectedColumn, column, columnValue) {
+
         if(dbc) {
-            dbc.exec("SELECT " + selectedColumn + " FROM " + config.databasePrefix + "verify WHERE " + column + " = '" + columnValue + "'", function (err, res) {
-                if(!err) {
-                    return res;
-                } else {
-                    return [];
+            dbc.query("SELECT " + selectedColumn + " FROM " + config.databasePrefix + "verify WHERE " + column + " = '" + columnValue + "'", function (err, res) {
+                if (!err) {
+                    let resultUnder = [];
+
+                    res.forEach(function(row) {
+                        var charArray = row.ts_uuid;
+                        var string = "";
+                        for(let i = 0; i < charArray.length; i++) {
+                            string += String.fromCharCode(charArray[i]);
+                        }
+                        engine.log(string);
+                        resultUnder.push(string);
+                    });
+
+                    engine.log(resultUnder);
+
+                    resultUnder.forEach(processValues);
+
                 }
             });
         } else {
-            return [];
+            engine.log("error2");
         }
+
     }
 
     function processValues(item, index) {
 
-        var user = getClientByUniqueID(item);
+        //Problems with getting user by UID
+        var client = backend.getClientByUID(item);
 
-        user.chat("Hi!");
+        engine.log(index + " : " + item);
+
+        engine.log(client);
+
+        client.chat("Hi!");
 
     }
 
     async function doStuff() {
         while (true) {
-            var toCheck = getSpecificValue("ts_uuid", "verified" , "0");
 
-            toCheck.forEach(processValues);
+            engine.log("work");
 
-            await sleep(3000);
+            getSpecificValue("*", "verified" , 0);
+
+            await sleep(10000000);
         }
     }
 
