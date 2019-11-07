@@ -65,6 +65,60 @@ registerPlugin({
     // Baue Tabellen auf, falls sie nicht existieren
     if (dbc) dbc.exec("CREATE TABLE IF NOT EXISTS " + config.databasePrefix + "verify ( id int(11) NOT NULL AUTO_INCREMENT, minecraft_uuid varchar(255) NOT NULL, ts_uuid varchar(255) NOT NULL, verification_code varchar(255) NOT NULL, verified int(11) NOT NULL, primary key (id))");
 
+	event.on("chat", function(ev) {
+			
+		var user = ev.client.uid();
+		
+		engine.log(user);
+		
+		if (dbc) dbc.query("SELECT ts_uuid FROM " + config.databasePrefix + "verify WHERE verified=1", function (err, res) {
+			if (!err) {
+				var ts_uuid = [];
+				
+				res.forEach(function(row) {
+					var charArray = row.ts_uuid;
+					var string = "";
+					for(let i = 0; i < charArray.length; i++) {
+						string += String.fromCharCode(charArray[i]);
+					}
+					ts_uuid.push(string);
+				});
+				
+				if(ts_uuid.includes(user)) {
+					engine.log(user);
+					dbc.query("SELECT verification_code FROM " + config.databasePrefix + "verify WHERE ts_uuid='" + user + "'", function (err, res) {
+						if(!err) {
+							var verification_code = "";
+					
+							res.forEach(function(row) {
+								var charArray = row.verification_code;
+								var string = "";
+								for(let i = 0; i < charArray.length; i++) {
+									string += String.fromCharCode(charArray[i]);
+								}
+								verification_code = string;
+							});
+							
+							engine.log(verification_code);
+							
+							var client = backend.getClientByUID(user);
+							
+							if(ev.text === verification_code) {
+								client.chat("Du wurdest verifiziert!");
+								if (dbc) dbc.exec("UPDATE " + config.databasePrefix + "verify SET verified=2 WHERE ts_uuid='" + user + "'"); 
+							} else {
+								client.chat("Der Code war nicht richtig!");
+							}
+						}
+					});
+				}	
+				
+			}
+			
+		});
+	
+	});	
+
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
@@ -100,14 +154,13 @@ registerPlugin({
 
     function processValues(item, index) {
 
-        //Problems with getting user by UID
         var client = backend.getClientByUID(item);
 
         engine.log(index + " : " + item);
 
         engine.log(client);
 
-        client.chat("Hi!");
+        if (dbc) dbc.exec("UPDATE " + config.databasePrefix + "verify SET verified=1 WHERE ts_uuid='" + item + "'"); 
 
     }
 
@@ -118,7 +171,7 @@ registerPlugin({
 
             getSpecificValue("*", "verified" , 0);
 
-            await sleep(10000000);
+            await sleep(2000);
         }
     }
 
