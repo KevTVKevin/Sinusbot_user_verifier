@@ -105,7 +105,8 @@ registerPlugin({
 							
 							if(ev.text === verification_code) {
 								client.chat("Du wurdest verifiziert!");
-								if (dbc) dbc.exec("UPDATE " + config.databasePrefix + "verify SET verified=2 WHERE ts_uuid='" + user + "'"); 
+								if (dbc) dbc.exec("UPDATE " + config.databasePrefix + "verify SET verified=2 WHERE ts_uuid='" + user + "'");
+								setToGroups(client);
 							} else {
 								client.chat("Der Code war nicht richtig!");
 							}
@@ -118,6 +119,21 @@ registerPlugin({
 		});
 	
 	});	
+	
+	function setToGroups(user) {
+		for(let i = 0; i < config.removeIds.length; i++) {
+			
+			user.removeFromServerGroup(config.removeIds[i]);
+			
+		}
+		
+		for(let i = 0; i < config.addIds.length; i++) {
+				
+			user.addToServerGroup(config.addIds[i]);	
+				
+		}	
+		
+	}	
 
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
@@ -161,6 +177,8 @@ registerPlugin({
         engine.log(client);
 
         if (dbc) dbc.exec("UPDATE " + config.databasePrefix + "verify SET verified=1 WHERE ts_uuid='" + item + "'"); 
+		
+		client.chat("Bitte geb deinen Verifaction Code ein, welcher dir im Minecraft Chat gesendet wurde!");
 
     }
 
