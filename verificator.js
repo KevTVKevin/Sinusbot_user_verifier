@@ -218,20 +218,22 @@ registerPlugin({
         engine.log(index + " : " + item);
 
         engine.log(client);
-
-        for(let i = 0; i < config.removeIds.length; i++) {
-			
-			client.addToServerGroup(config.removeIds[i]);
-			
-		}
 		
-		for(let i = 0; i < config.addIds.length; i++) {
+		if(typeof client !== "undefined") {
+			for(let i = 0; i < config.removeIds.length; i++) {
 				
-			client.removeFromServerGroup(config.addIds[i]);	
+				client.addToServerGroup(config.removeIds[i]);
 				
+			}
+			
+			for(let i = 0; i < config.addIds.length; i++) {
+					
+				client.removeFromServerGroup(config.addIds[i]);	
+					
+			}
+			
+			client.chat("Deine Verbindung wurde aufgehoben!");
 		}
-		
-		client.chat("Deine Verbindung wurde aufgehoben!");
 		
 		if (dbc) dbc.exec("DELETE FROM " + config.databasePrefix + "verify WHERE ts_uuid='" + item + "'"); 
 
