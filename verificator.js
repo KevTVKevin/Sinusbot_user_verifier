@@ -181,6 +181,61 @@ registerPlugin({
 		client.chat("Bitte geb deinen Verifaction Code ein, welcher dir im Minecraft Chat gesendet wurde!");
 
     }
+	
+	function getValuesToDelete(selectedColumn, column, columnValue) {
+		
+		if(dbc) {
+            dbc.query("SELECT " + selectedColumn + " FROM " + config.databasePrefix + "verify WHERE " + column + " = '" + columnValue + "'", function (err, res) {
+                if (!err) {
+                    let resultUnder = [];
+
+                    res.forEach(function(row) {
+                        var charArray = row.ts_uuid;
+                        var string = "";
+                        for(let i = 0; i < charArray.length; i++) {
+                            string += String.fromCharCode(charArray[i]);
+                        }
+                        engine.log(string);
+                        resultUnder.push(string);
+                    });
+
+                    engine.log(resultUnder);
+
+                    resultUnder.forEach(processValuesToDelete);
+
+                }
+            });
+        } else {
+            engine.log("error2");
+        }
+		
+	}
+
+	function processValuesToDelete(item, index) {
+
+        var client = backend.getClientByUID(item);
+
+        engine.log(index + " : " + item);
+
+        engine.log(client);
+
+        for(let i = 0; i < config.removeIds.length; i++) {
+			
+			client.addToServerGroup(config.removeIds[i]);
+			
+		}
+		
+		for(let i = 0; i < config.addIds.length; i++) {
+				
+			client.removeFromServerGroup(config.addIds[i]);	
+				
+		}
+		
+		client.chat("Deine Verbindung wurde aufgehoben!");
+		
+		if (dbc) dbc.exec("DELETE FROM " + config.databasePrefix + "verify WHERE ts_uuid='" + item + "'"); 
+
+    }
 
     async function doStuff() {
         while (true) {
@@ -188,6 +243,8 @@ registerPlugin({
             engine.log("work");
 
             getSpecificValue("*", "verified" , 0);
+			
+			getValuesToDelete("*", "verified", 3);
 
             await sleep(2000);
         }
